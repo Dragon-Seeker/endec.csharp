@@ -1,0 +1,30 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework/>
+        <TargetFrameworks>net7.0;netstandard2.1</TargetFrameworks>
+        <Nullable>enable</Nullable>
+        <AssemblyName>Endec</AssemblyName>
+        <Product>Endec</Product>
+        <Version>1.0.0</Version>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <LangVersion>latest</LangVersion>
+        <RestoreAdditionalProjectSources>
+            https://api.nuget.org/v3/index.json;
+            https://nuget.bepinex.dev/v3/index.json;
+            https://nuget.samboy.dev/v3/index.json
+        </RestoreAdditionalProjectSources>
+        <RootNamespace>io.wispforest</RootNamespace>
+    </PropertyGroup>
+    <ItemGroup>
+        <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
+    </ItemGroup>
+    <ItemGroup>
+      <Folder Include="obj\Debug\" />
+    </ItemGroup>
+
+    <PropertyGroup Condition="'$(TargetFramework)'=='net7.0' or '$(TargetFramework)'=='net8.0' or '$(TargetFramework)'=='net9.0'">
+        <DefineConstants>NET7_OR_HIGHER</DefineConstants>
+    </PropertyGroup>
+
+</Project>
