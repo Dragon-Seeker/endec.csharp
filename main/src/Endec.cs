@@ -32,7 +32,7 @@ public abstract class Endec<T> : Endec {
     /// Decode the data specified by <see cref="encode{E}"/> and reconstruct
     /// the corresponding instance of <typeparamref name="T"/>.
     /// <para/>
-    /// Endecs which intend to handle deserialization failure by decoding a different
+    /// Endec which intend to handle deserialization failure by decoding a different
     /// structure on error, must wrap their initial reads in a call to <see cref="Deserializer{E}.tryRead"/>
     /// to ensure that deserializer state is restored for the subsequent attempt
     /// </summary>
@@ -268,6 +268,58 @@ public abstract class Endec<T> : Endec {
 
 public interface Endec {
     
+     public static readonly StructEndec<object> VOID = Endec.unit<object>(null);
+        
+    public static readonly Endec<bool> BOOLEAN = Endec.of<bool>((ctx, serializer, value) => serializer.writeBoolean(ctx, value), (ctx, deserializer) => deserializer.readBoolean(ctx)); 
+    public static readonly Endec<byte> BYTE = Endec.of<byte>((ctx, serializer, value) => serializer.writeByte(ctx, value), (ctx, deserializer) => deserializer.readByte(ctx));
+    public static readonly Endec<short> SHORT = Endec.of<short>((ctx, serializer, value) => serializer.writeShort(ctx, value), (ctx, deserializer) => deserializer.readShort(ctx));
+    public static readonly Endec<int> INT = Endec.of<int>((ctx, serializer, value) => serializer.writeInt(ctx, value), (ctx, deserializer) => deserializer.readInt(ctx));
+    public static readonly Endec<int> VAR_INT = Endec.of<int>((ctx, serializer, value) => serializer.writeVarInt(ctx, value), (ctx, deserializer) => deserializer.readVarInt(ctx));
+    public static readonly Endec<long> LONG = Endec.of<long>((ctx, serializer, value) => serializer.writeLong(ctx, value), (ctx, deserializer) => deserializer.readLong(ctx));
+    public static readonly Endec<long> VAR_LONG = Endec.of<long>((ctx, serializer, value) => serializer.writeVarLong(ctx, value), (ctx, deserializer) => deserializer.readVarLong(ctx));
+    public static readonly Endec<float> FLOAT = Endec.of<float>((ctx, serializer, value) => serializer.writeFloat(ctx, value), (ctx, deserializer) => deserializer.readFloat(ctx));
+    public static readonly Endec<double> DOUBLE = Endec.of<double>((ctx, serializer, value) => serializer.writeDouble(ctx, value), (ctx, deserializer) => deserializer.readDouble(ctx));
+    public static readonly Endec<string> STRING = Endec.of<string>((ctx, serializer, value) => serializer.writeString(ctx, value), (ctx, deserializer) => deserializer.readString(ctx));
+    public static readonly Endec<byte[]> BYTES = Endec.of<byte[]>((ctx, serializer, value) => serializer.writeBytes(ctx, value), (ctx, deserializer) => deserializer.readBytes(ctx));
+    
+    public static readonly Endec<int[]> INT_ARRAY = INT.listOf().xmap<int[]>((list) => list.ToArray(), (ints) => new List<int>(ints));
+    public static readonly Endec<long[]> LONG_ARRAY = LONG.listOf().xmap((list) => list.ToArray(), (longs) => new List<long>(longs));
+    
+    public static readonly Endec<Guid> GUID = Endec
+        .ifAttr(SerializationAttributes.HUMAN_READABLE, STRING.xmap(Guid.Parse, guid => guid.ToString()))
+        .orElse(BYTES.xmap(bytes => new Guid(bytes), guid => guid.ToByteArray()));
+    
+    public static Endec<V> vectorEndec<C, V>(String name, Endec<C> componentEndec, Func<C, C, V> constructor, Func<V, C> xGetter, Func<V, C> yGetter) { 
+        return componentEndec.listOf()
+            .validate(validateSize<C>(name, 2))
+            .xmap<V>(
+                components => constructor(components[0], components[1]),
+                vector => [xGetter(vector), yGetter(vector)]
+            );
+    }
+
+    public static Endec<V> vectorEndec<C, V>(String name, Endec<C> componentEndec, Func<C, C, C, V> constructor, Func<V, C> xGetter, Func<V, C> yGetter, Func<V, C> zGetter) {
+        return componentEndec.listOf()
+            .validate(validateSize<C>(name, 3))
+            .xmap(
+                components => constructor(components[0], components[1], components[2]),
+                vector => [xGetter(vector), yGetter(vector), zGetter(vector)]
+            );
+    }
+
+    public static Endec<V> vectorEndec<C, V>(String name, Endec<C> componentEndec, Func<C, C, C, C, V> constructor, Func<V, C> xGetter, Func<V, C> yGetter, Func<V, C> zGetter, Func<V, C> wGetter) {
+        return componentEndec.listOf()
+            .validate(validateSize<C>(name, 4))
+            .xmap(
+                components => constructor(components[0], components[1], components[2], components[3]),
+                vector => [xGetter(vector), yGetter(vector), zGetter(vector), wGetter(vector)]
+            );
+    }
+    
+    private static Action<IList<C>> validateSize<C>(String name, int requiredSize) { 
+        return collection => { if (collection.Count() != 4) throw new ArgumentException(name + "collection must have " + requiredSize + " elements"); };
+    }
+    
     internal static IntFunction<IDictionary<K, V>> DefaultDictionary<K, V>() => i => new Dictionary<K, V>(i);
     
     public static Endec<T> of<T>(Encoder<T> encoder, Decoder<T> decoder) {
@@ -386,7 +438,7 @@ public interface Endec {
     
         return ifAttr(
             SerializationAttributes.HUMAN_READABLE,
-            Endecs.STRING.xmap<E>(name => {
+            Endec.STRING.xmap<E>(name => {
                 var entry = serializedNames[name];
 
                 if (entry is null) throw new Exception($"{type.Name} constant with the name of [{name}] could not be located!");
@@ -400,7 +452,7 @@ public interface Endec {
                 return name;
             })
         ).orElse(
-                Endecs.VAR_INT.xmap(ordinal => enumValues[ordinal], value => entryToIndex[value])
+                Endec.VAR_INT.xmap(ordinal => enumValues[ordinal], value => entryToIndex[value])
         );
     }
     #else
@@ -421,7 +473,7 @@ public interface Endec {
     
         return ifAttr(
                 SerializationAttributes.HUMAN_READABLE,
-                Endecs.STRING.xmap<E>(name => {
+                Endec.STRING.xmap<E>(name => {
                     var entry = serializedNames[name];
     
                     if (entry is null) throw new Exception($"{type.Name} constant with the name of [{name}] could not be located!");
@@ -435,7 +487,7 @@ public interface Endec {
                     return name;
                 })
         ).orElse(
-                Endecs.VAR_INT.xmap(ordinal => (E) enumValues.GetValue(ordinal), value => entryToIndex[value])
+                Endec.VAR_INT.xmap(ordinal => (E) enumValues.GetValue(ordinal), value => entryToIndex[value])
         );
     }
     #endif
@@ -490,7 +542,7 @@ public interface Endec {
     ///
     /// We could then create an endec capable of serializing either <c>Harald</c> or <c>Albrecht</c> as follows:
     /// <code>
-    /// Endec.dispatchedStruct(HERBERT_REGISTRY::get, Herbert::id, BuiltInEndecs.IDENTIFIER, "type")
+    /// Endec.dispatchedStruct(HERBERT_REGISTRY::get, Herbert::id, BuiltInEndec.IDENTIFIER, "type")
     /// </code>
     ///
     /// If we now encode an instance of <c>Albrecht</c> to JSON using this endec, we'll get the following result:
