@@ -21,11 +21,21 @@
     <Description>Newtonsoft Json Module for Endec</Description>
     <Copyright>MIT</Copyright>
     <PackageProjectUrl>https://github.com/Dragon-Seeker/endec.csharp</PackageProjectUrl>
-    <PackageLicenseUrl>https://github.com/Dragon-Seeker/endec.csharp/blob/master/LICENSE</PackageLicenseUrl>
     <RepositoryUrl>https://github.com/Dragon-Seeker/endec.csharp</RepositoryUrl>
+    <PackageTags>csharp;library;utils</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="docs\README.md" Pack="true" PackagePath="\"/>
+    <None Include="..\LICENSE" Pack="true" PackagePath=""/>
+    
     <Folder Include="obj\Debug\" />
 
     <EditorConfigFiles Include="obj\Debug\netstandard2.1\json.GeneratedMSBuildEditorConfig.editorconfig" />
@@ -34,7 +44,13 @@
 
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
 
-    <ProjectReference Include="..\main\Endec.csproj" />
+    <ItemGroup Condition="'$(Configuration)' == 'Debug'">
+      <ProjectReference Include="..\main\Endec.csproj" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(Configuration)' == 'Release'">
+      <PackageReference Include="Endec" Version="1.1.0" />
+    </ItemGroup>
   </ItemGroup>
 
   <PropertyGroup Condition="'$(TargetFramework)'=='net7.0' or '$(TargetFramework)'=='net8.0' or '$(TargetFramework)'=='net9.0'">

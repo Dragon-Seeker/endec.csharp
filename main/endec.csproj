@@ -5,7 +5,7 @@
 
     <AssemblyName>Endec</AssemblyName>
     <Product>Endec</Product>
-    <Version>1.0.0</Version>
+    <Version>1.1.0</Version>
 
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -20,12 +20,23 @@
     <Authors>blodhgarm</Authors>
     <Description> A format-agnostic serialization framework </Description>
     <Copyright>MIT</Copyright>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageProjectUrl>https://github.com/Dragon-Seeker/endec.csharp</PackageProjectUrl>
-    <PackageLicenseUrl>https://github.com/Dragon-Seeker/endec.csharp/blob/master/LICENSE</PackageLicenseUrl>
     <RepositoryUrl>https://github.com/Dragon-Seeker/endec.csharp</RepositoryUrl>
+    <PackageTags>csharp;library;utils</PackageTags>
+
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
 
   <ItemGroup>
+
+    <None Include="docs\README.md" Pack="true" PackagePath="\"/>
+    <None Include="..\LICENSE" Pack="true" PackagePath=""/>
+    
     <Folder Include="obj\Debug\" />
 
     <EditorConfigFiles Include="obj\Debug\netstandard2.1\endec.GeneratedMSBuildEditorConfig.editorconfig" />
