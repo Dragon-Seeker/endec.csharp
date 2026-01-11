@@ -73,13 +73,10 @@ public class JsonDeserializer : RecursiveDeserializer<JToken>, SelfDescribedDese
     private T getValueSafe<T>() where T : JToken {
         var value = getValue();
 
-        if (value is null) {
-            throw new Exception("UHHHHHHHHHHHHHHHHHHHHHHHHH");
-        } else if (value is not T) {
-            throw new Exception($"FUCKLKDKDKDKDKDKDK: [Type: {value.GetType()}");
-        }
+        if (value is null) throw new NullReferenceException("Value was found to be null meaning something has gone wrong");
+        if (value is not T token) throw new Exception($"Unable to cast value safely to `{typeof(T)}` as it was found to be '{value.GetType()}'");
 
-        return value as T;
+        return token;
     }
     
     public override byte[] readBytes(SerializationContext ctx) {
@@ -223,7 +220,7 @@ public class JsonDeserializer : RecursiveDeserializer<JToken>, SelfDescribedDese
         private readonly JsonDeserializer deserializer;
         private readonly SerializationContext ctx;
         private readonly Endec<V> valueEndec;
-        private readonly IEnumerator<KeyValuePair<String, JToken>> entries;
+        private readonly IEnumerator<KeyValuePair<String, JToken?>> entries;
         private readonly int size;
 
         public JsonMapDeserializer(JsonDeserializer deserializer, SerializationContext ctx, Endec<V> valueEndec, JObject entries) {
@@ -248,7 +245,7 @@ public class JsonDeserializer : RecursiveDeserializer<JToken>, SelfDescribedDese
         public KeyValuePair<string, V> next() {
             var entry = this.entries.Current;
             return deserializer.frame(
-                    () => entry.Value,
+                    () => entry.Value!,
                     () => new KeyValuePair<string, V>(entry.Key, this.valueEndec.decode(this.ctx.pushField(entry.Key), deserializer))
             );
         }

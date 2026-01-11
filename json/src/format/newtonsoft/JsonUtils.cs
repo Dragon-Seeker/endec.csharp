@@ -78,7 +78,7 @@ public class JsonUtils {
             if (file is null || !File.Exists(file)) continue;
 
             try {
-                var entry = parseFromFile(file, endec);
+                var entry = parseFromFile(file, endec)!;
 
                 entries[keyMaker(file)] = entry;
             } catch (Exception e) {

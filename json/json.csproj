@@ -16,6 +16,13 @@
       https://nuget.samboy.dev/v3/index.json
     </RestoreAdditionalProjectSources>
     <RootNamespace>io.wispforest.endec</RootNamespace>
+    <Title>Endec.Json</Title>
+    <Authors>blodhgarm</Authors>
+    <Description>Newtonsoft Json Module for Endec</Description>
+    <Copyright>MIT</Copyright>
+    <PackageProjectUrl>https://github.com/Dragon-Seeker/endec.csharp</PackageProjectUrl>
+    <PackageLicenseUrl>https://github.com/Dragon-Seeker/endec.csharp/blob/master/LICENSE</PackageLicenseUrl>
+    <RepositoryUrl>https://github.com/Dragon-Seeker/endec.csharp</RepositoryUrl>
   </PropertyGroup>
 
   <ItemGroup>
