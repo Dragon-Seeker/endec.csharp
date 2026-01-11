@@ -117,4 +117,3 @@ public class SerializationContext {
         return $"SerializationContext[Attributes: {attributeValues}, SuppressedAttributes: {suppressedAttributes}, CurrentTrace: {trace}]";
     }
 }
-}
