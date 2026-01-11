@@ -6,7 +6,9 @@ This repository contains the C# implementation. The reference implementation (wr
 
 ### Repository Structure
 
-WIP
+This project contains 3 submodules with the root src containing the core `endec` package which defines the API and contains some base implementations. The nested modules are as follows:
+
+- `json`: Support for Json language using the [Newtonsoft.Json](https://github.com/JamesNK/Newtonsoft.Json) Library
 
 ### Documentation
 
