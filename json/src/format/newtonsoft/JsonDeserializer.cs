@@ -149,15 +149,15 @@ public class JsonDeserializer : RecursiveDeserializer<JToken>, SelfDescribedDese
                 handledToken = false;
             }
         } else if (element is JArray array) {
-            using (var sequence = visitor.sequence(ctx, Endec.of<JToken>(this.decodeValue, (_, _) => null), array.Count)) {
+            using (var sequence = visitor.sequence(ctx, Endec.of<JToken>(this.decodeValue, (_, _) => JValue.CreateNull()), array.Count)) {
                 foreach (var jToken in array) {
                     sequence.element(jToken);
                 }
             }
         } else if (element is JObject obj) {
-            using (var map = visitor.map(ctx, Endec.of<JToken>(this.decodeValue, (_, _) => null), obj.Count)) {
+            using (var map = visitor.map(ctx, Endec.of<JToken>(this.decodeValue, (_, _) => JValue.CreateNull()), obj.Count)) {
                 foreach (var entry in obj) {
-                    map.entry(entry.Key, entry.Value);
+                    map.entry(entry.Key, entry.Value!);
                 }
             }
         } else {

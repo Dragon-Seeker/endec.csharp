@@ -8,7 +8,7 @@ namespace io.wispforest.endec.format.edm;
 
 public class EdmSerializer : RecursiveSerializer<EdmElement>, SelfDescribedSerializer<EdmElement> {
 
-    protected EdmSerializer() : base(null) { }
+    protected EdmSerializer() : base(EdmElements.EMPTY) { }
 
     public static EdmSerializer of() {
         return new EdmSerializer();
@@ -101,6 +101,7 @@ public class EdmSerializer : RecursiveSerializer<EdmElement>, SelfDescribedSeria
         private readonly IList<EdmElement> result;
 
         public Sequence(EdmSerializer serializer, Endec<V> elementEndec, SerializationContext ctx) {
+            this.serializer = serializer;
             this.elementEndec = elementEndec;
             this.ctx = ctx;
             this.result = new List<EdmElement>();

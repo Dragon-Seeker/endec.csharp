@@ -35,8 +35,8 @@ public class JsonUtils {
         return readFromString(File.ReadAllText(path));
     }
 
-    public static T parseFromFile<T>(string path) where T : EndecGetter<T> {
-        return parseFromFile<T>(path, EndecGetter.Endec<T>());
+    public static T? parseFromFile<T>(string path) where T : EndecGetter<T> {
+        return parseFromFile(path, EndecGetter.Endec<T>());
     }
     
     public static T? parseFromFile<T>(string path, Endec<T> endec) {
