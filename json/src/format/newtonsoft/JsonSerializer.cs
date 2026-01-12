@@ -9,12 +9,12 @@ public class JsonSerializer : RecursiveSerializer<JToken>, SelfDescribedSerializ
 
     internal JToken? prefix;
 
-    protected JsonSerializer(JToken prefix) : base(JValue.CreateNull()) {
+    protected JsonSerializer(JToken? prefix) : base(JValue.CreateNull()) {
         this.prefix = prefix;
     }
 
     public static JsonSerializer of() {
-        return new JsonSerializer(JValue.CreateNull());
+        return new JsonSerializer(null);
     }
     
     public SerializationContext setupContext(SerializationContext ctx) {

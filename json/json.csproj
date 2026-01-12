@@ -5,7 +5,7 @@
     
     <AssemblyName>Endec.Json</AssemblyName>
     <Product>Endec.Json</Product>
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
 
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -43,14 +43,14 @@
     <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
 
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+  </ItemGroup>
 
-    <ItemGroup Condition="'$(Configuration)' == 'Debug'">
-      <ProjectReference Include="..\main\Endec.csproj" />
-    </ItemGroup>
+  <ItemGroup Condition="'$(Configuration)' == 'Debug'">
+    <ProjectReference Include="..\main\Endec.csproj" />
+  </ItemGroup>
 
-    <ItemGroup Condition="'$(Configuration)' == 'Release'">
-      <PackageReference Include="Endec" Version="1.1.0" />
-    </ItemGroup>
+  <ItemGroup Condition="'$(Configuration)' == 'Release'">
+    <PackageReference Include="Endec" Version="1.0.0" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(TargetFramework)'=='net7.0' or '$(TargetFramework)'=='net8.0' or '$(TargetFramework)'=='net9.0'">
