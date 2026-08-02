@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using io.wispforest.endec.util.funny;
 
 namespace io.wispforest.endec.util;
 
@@ -67,9 +68,9 @@ public abstract class RecursiveDeserializer<T> : Deserializer<T>  where T : clas
     public abstract bool readBoolean(SerializationContext ctx);
     public abstract string readString(SerializationContext ctx);
     public abstract byte[] readBytes(SerializationContext ctx);
-    public abstract V? readOptional<V>(SerializationContext ctx, Endec<V> endec);
+    public abstract Optional<V> readOptionalPacked<V>(SerializationContext ctx, Endec<V> endec);
 
     public abstract SequenceDeserializer<E> sequence<E>(SerializationContext ctx, Endec<E> elementEndec);
     public abstract MapDeserializer<V> map<V>(SerializationContext ctx, Endec<V> valueEndec);
-    public abstract StructDeserializer structed();
+    public abstract StructDeserializer structed(SerializationContext ctx);
 }

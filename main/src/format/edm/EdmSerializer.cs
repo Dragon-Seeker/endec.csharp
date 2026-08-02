@@ -10,152 +10,93 @@ public class EdmSerializer : RecursiveSerializer<EdmElement>, SelfDescribedSeria
 
     protected EdmSerializer() : base(EdmElements.EMPTY) { }
 
-    public static EdmSerializer of() {
-        return new EdmSerializer();
-    }
+    public static EdmSerializer of() => new();
 
     // ---
     
-    public override void writeByte(SerializationContext ctx, byte value) {
-        this.consume(EdmElements.i8(unchecked((sbyte) value)));
-    }
+    public override void writeByte(SerializationContext ctx, byte value) => consume(EdmElements.u8(value));
 
-    public override void writeShort(SerializationContext ctx, short value) {
-        this.consume(EdmElements.i16(value));
-    }
+    public override void writeShort(SerializationContext ctx, short value) => consume(EdmElements.i16(value));
 
-    public override void writeInt(SerializationContext ctx, int value) {
-        this.consume(EdmElements.i32(value));
-    }
+    public override void writeInt(SerializationContext ctx, int value) => consume(EdmElements.i32(value));
 
-    public override void writeLong(SerializationContext ctx, long value) {
-        this.consume(EdmElements.i64(value));
-    }
+    public override void writeLong(SerializationContext ctx, long value) => consume(EdmElements.i64(value));
 
-    // ---
+    public void writeSByte(SerializationContext ctx, sbyte value) => consume(EdmElements.i8(value));
 
-    public override void writeFloat(SerializationContext ctx, float value) {
-        this.consume(EdmElements.f32(value));
-    }
+    public void writeUShort(SerializationContext ctx, ushort value) => consume(EdmElements.u16(value));
 
-    public override void writeDouble(SerializationContext ctx, double value) {
-        this.consume(EdmElements.f64(value));
-    }
+    public void writeInt(SerializationContext ctx, uint value) => consume(EdmElements.u32(value));
+
+    public void writeLong(SerializationContext ctx, ulong value) => consume(EdmElements.u64(value));
 
     // ---
 
-    public override void writeVarInt(SerializationContext ctx, int value) {
-        this.consume(EdmElements.i32(value));
-    }
+    public override void writeFloat(SerializationContext ctx, float value) => consume(EdmElements.f32(value));
 
-    public override void writeVarLong(SerializationContext ctx, long value) {
-        this.consume(EdmElements.i64(value));
-    }
+    public override void writeDouble(SerializationContext ctx, double value) => consume(EdmElements.f64(value));
 
     // ---
 
-    public override void writeBoolean(SerializationContext ctx, bool value) {
-        this.consume(EdmElements.@bool(value));
-    }
+    public override void writeVarInt(SerializationContext ctx, int value) => consume(EdmElements.i32(value));
 
-    public override void writeString(SerializationContext ctx, String value) {
-        this.consume(EdmElements.@string(value));
-    }
+    public override void writeVarLong(SerializationContext ctx, long value) => consume(EdmElements.i64(value));
 
-    public override void writeBytes(SerializationContext ctx, byte[] bytes) {
-        this.consume(EdmElements.bytes(bytes));
-    }
+    // ---
 
-    public override void writeOptional<V>(SerializationContext ctx, Endec<V> endec, V? optional) where V : default  {
+    public override void writeBoolean(SerializationContext ctx, bool value) => consume(EdmElements.@bool(value));
+
+    public override void writeString(SerializationContext ctx, string value) => consume(EdmElements.@string(value));
+
+    public override void writeBytes(SerializationContext ctx, byte[] bytes) => consume(EdmElements.bytes(bytes));
+
+    public override void writeOptional<V>(SerializationContext ctx, Endec<V> endec, bool isPresent, Func<V> getter) {
         var result = new EdmElement[1];
-        this.frame(encoded => {
-            if (optional is not null) endec.encode(ctx, this, optional);
+        frame(encoded => {
+            if (isPresent) endec.encode(ctx, this, getter());
             result[0] = encoded.value();
         });
-
-        this.consume(EdmElements.optional(result[0]));
+        consume(EdmElements.optional(result[0]));
     }
 
     // ---
 
-    public override SequenceSerializer<E> sequence<E>(SerializationContext ctx, Endec<E> elementEndec, int size) {
-        return new Sequence<E>(this, elementEndec, ctx);
-    }
+    public override SequenceSerializer<E> sequence<E>(SerializationContext ctx, Endec<E> elementEndec, int size) => new Sequence<E>(this, elementEndec, ctx);
 
-    public override MapSerializer<V> map<V>(SerializationContext ctx, Endec<V> valueEndec, int size) {
-        return new Map<V>(this, valueEndec, ctx);
-    }
+    public override MapSerializer<V> map<V>(SerializationContext ctx, Endec<V> valueEndec, int size) => new Map<V>(this, valueEndec, ctx);
 
-    public override StructSerializer structed() {
-        return new Struct(this);
-    }
+    public override StructSerializer structed(SerializationContext ctx) => new Struct(this);
 
     // ---
 
-    internal class Sequence<V> : SequenceSerializer<V> {
-
-        private readonly EdmSerializer serializer;
-        private readonly Endec<V> elementEndec;
-        private readonly SerializationContext ctx;
-
-        private readonly IList<EdmElement> result;
-
-        public Sequence(EdmSerializer serializer, Endec<V> elementEndec, SerializationContext ctx) {
-            this.serializer = serializer;
-            this.elementEndec = elementEndec;
-            this.ctx = ctx;
-            this.result = new List<EdmElement>();
-        }
+    protected class Sequence<V>(EdmSerializer serializer, Endec<V> elementEndec, SerializationContext ctx) : SequenceSerializer<V> {
+        private readonly IList<EdmElement> _result = new List<EdmElement>();
 
         public void element(V element) {
             serializer.frame(encoded => {
-                this.elementEndec.encode(ctx, serializer, element);
-                this.result.Add(encoded.require("sequence element"));
+                elementEndec.encode(ctx, serializer, element);
+                _result.Add(encoded.require("sequence element"));
             });
         }
 
-        public void end() {
-            serializer.consume(EdmElements.sequence(this.result));
-        }
+        public void end() => serializer.consume(EdmElements.sequence(_result));
     }
 
-    internal class Map<V> : MapSerializer<V> {
+    protected class Map<V>(EdmSerializer serializer, Endec<V> valueEndec, SerializationContext ctx) : MapSerializer<V> {
+        private readonly IDictionary<string, EdmElement> _result = new Dictionary<string, EdmElement>();
 
-        private readonly EdmSerializer serializer;
-        private readonly Endec<V> valueEndec;
-        private readonly SerializationContext ctx;
-
-        private readonly IDictionary<string, EdmElement> result;
-
-        public Map(EdmSerializer serializer, Endec<V> valueEndec, SerializationContext ctx) {
-            this.serializer = serializer;
-            this.valueEndec = valueEndec;
-            this.ctx = ctx;
-
-            this.result = new Dictionary<string, EdmElement>();
-        }
-        
         public void entry(String key, V value) {
             serializer.frame(encoded => {
-                this.valueEndec.encode(ctx, serializer, value);
-                this.result[key] = encoded.require("map value");
+                valueEndec.encode(ctx, serializer, value);
+                _result[key] = encoded.require("map value");
             });
         }
         
-        public void end() {
-            serializer.consume(EdmElements.map(this.result));
-        }
+        public void end() => serializer.consume(EdmElements.map(_result));
     }
 
-    internal class Struct : StructSerializer {
-
-        private readonly EdmSerializer serializer;
-        private readonly IDictionary<string, EdmElement> result;
-
-        public Struct(EdmSerializer serializer) {
-            this.serializer = serializer;
-            this.result = new Dictionary<string, EdmElement>();
-        }
+    protected class Struct(EdmSerializer serializer) : StructSerializer {
+        private readonly IDictionary<string, EdmElement> result = new Dictionary<string, EdmElement>();
 
         public StructSerializer field<F>(String name, SerializationContext ctx, Endec<F> endec, F value, bool mayOmit) {
             serializer.frame(encoded => {
@@ -165,14 +106,12 @@ public class EdmSerializer : RecursiveSerializer<EdmElement>, SelfDescribedSeria
 
                 if (mayOmit && element.Equals(EdmElements.EMPTY)) return;
 
-                this.result[name] = element;
+                result[name] = element;
             });
 
             return this;
         }
         
-        public void end() {
-            serializer.consume(EdmElements.map(this.result));
-        }
+        public void end() => serializer.consume(EdmElements.map(result));
     }
 }

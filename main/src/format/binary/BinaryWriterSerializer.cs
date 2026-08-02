@@ -6,8 +6,8 @@ using io.wispforest.endec.util;
 namespace io.wispforest.endec.format.binary;
 
 public class BinaryWriterSerializer : Serializer<BinaryWriter> {
-    public static Action<string> DEBUG_HOOK_1 = (s) => { };
-    public static Action<long, long> DEBUG_HOOK_2 = (sizeBefore, sizeAfter) => { };
+    public static Action<string>? DEBUG_HOOK_1 = null;
+    public static Action<long, long>? DEBUG_HOOK_2 = null;
     
     protected readonly BinaryWriter input;
 
@@ -15,66 +15,46 @@ public class BinaryWriterSerializer : Serializer<BinaryWriter> {
         this.input = input;
     }
 
-    public static BinaryWriterSerializer of(BinaryWriter input) {
-        return new BinaryWriterSerializer(input);
-    }
+    public static BinaryWriterSerializer of(BinaryWriter input) => new (input);
 
-    public void writeByte(SerializationContext ctx, byte value) {
-        input.Write(value);
-    }
+    public void writeByte(SerializationContext ctx, byte value) => input.Write(value);
 
-    public void writeShort(SerializationContext ctx, short value) {
-        input.Write(value);
-    }
+    public void writeShort(SerializationContext ctx, short value) => input.Write(value);
 
-    public void writeInt(SerializationContext ctx, int value) {
-        input.Write(value);
-    }
+    public void writeInt(SerializationContext ctx, int value) => input.Write(value);
 
-    public void writeLong(SerializationContext ctx, long value) {
-        input.Write(value);
-    }
+    public void writeLong(SerializationContext ctx, long value) => input.Write(value);
 
-    public void writeFloat(SerializationContext ctx, float value) {
-        input.Write(value);
-    }
+    public void writeFloat(SerializationContext ctx, float value) => input.Write(value);
 
-    public void writeDouble(SerializationContext ctx, double value) {
-        input.Write(value);
-    }
+    public void writeDouble(SerializationContext ctx, double value) => input.Write(value);
 
-    public void writeVarInt(SerializationContext ctx, int value) {
-        VarInts.writeInt(value, b => writeByte(ctx, b));
-    }
+    public void writeVarInt(SerializationContext ctx, int value) => VarInts.writeInt(value, b => writeByte(ctx, b));
 
-    public void writeVarLong(SerializationContext ctx, long value) {
-        VarInts.writeLong(value, b => writeByte(ctx, b));
-    }
+    public void writeVarLong(SerializationContext ctx, long value) => VarInts.writeLong(value, b => writeByte(ctx, b));
 
-    public void writeBoolean(SerializationContext ctx, bool value) {
-        input.Write(value);
-    }
+    public void writeBoolean(SerializationContext ctx, bool value) => input.Write(value);
 
     public void writeString(SerializationContext ctx, string value) {
-        DEBUG_HOOK_1(value);
-
-        long prevLength = -1;
-        
-        if (input.BaseStream is MemoryStream memoryStream1) {
-            prevLength = memoryStream1.Length;
-        }
-        
         //input.Write(value);
-        
-        writeBytes(ctx, Encoding.UTF8.GetBytes(value));
-        
-        long newLength = -1;
-        
-        if (input.BaseStream is MemoryStream memoryStream2) {
-            newLength = memoryStream2.Length;
-        }
 
-        DEBUG_HOOK_2(prevLength, newLength);
+        DEBUG_HOOK_1?.Invoke(value);
+
+        if (DEBUG_HOOK_2 == null) {
+            writeBytes(ctx, Encoding.UTF8.GetBytes(value));
+        } else {
+            long prevLength = -1;
+
+            if (input.BaseStream is MemoryStream memoryStream1) prevLength = memoryStream1.Length;
+
+            writeBytes(ctx, Encoding.UTF8.GetBytes(value));
+
+            long newLength = -1;
+
+            if (input.BaseStream is MemoryStream memoryStream2) newLength = memoryStream2.Length;
+
+            DEBUG_HOOK_2.Invoke(prevLength, newLength);
+        }
     }
 
     public void writeBytes(SerializationContext ctx, byte[] bytes) {
@@ -82,59 +62,48 @@ public class BinaryWriterSerializer : Serializer<BinaryWriter> {
         input.Write(bytes);
     }
 
-    #nullable enable
-    public void writeOptional<V>(SerializationContext ctx, Endec<V> endec, V? optional) {
-        if (optional is null) {
-            writeBoolean(ctx, false);
-        } else {
-            writeBoolean(ctx, true);
-            endec.encode(ctx, this, optional);
-        }
+    public void writeOptional<V>(SerializationContext ctx, Endec<V> endec, bool isPresent, Func<V> getter) {
+        writeBoolean(ctx, isPresent);
+        if (isPresent) endec.encode(ctx, this, getter());
     }
-    #nullable disable
 
-    public BinaryWriter result() {
-        return input;
-    }
+    public BinaryWriter result() => input;
     
     public MapSerializer<V> map<V>(SerializationContext ctx, Endec<V> valueEndec, int size) {
         writeVarInt(ctx, size);
-        return new BinaryWriterSequenceSerializer<V>(this, ctx, valueEndec);
+        return new Sequence<V>(this, ctx, valueEndec);
     }
 
     public SequenceSerializer<E> sequence<E>(SerializationContext ctx, Endec<E> elementEndec, int size) {
         writeVarInt(ctx, size);
-        return new BinaryWriterSequenceSerializer<E>(this, ctx, elementEndec);
+        return new Sequence<E>(this, ctx, elementEndec);
     }
    
-    public StructSerializer structed() {
-        return new BinaryWriterStructSerializer(this);
-    }
-}
+    public StructSerializer structed(SerializationContext ctx) => new Struct(this);
 
-internal class BinaryWriterSequenceSerializer<V>(BinaryWriterSerializer serializer, SerializationContext ctx, Endec<V> valueEndec) 
-    : SequenceSerializer<V>, MapSerializer<V> {
+    protected class Sequence<V>(BinaryWriterSerializer serializer, SerializationContext ctx, Endec<V> valueEndec) : SequenceSerializer<V>, MapSerializer<V> {
 
-    private int index = 0;
-    
-    public void element(V element) {
-        valueEndec.encode(ctx.pushIndex(index), serializer, element);
-        index++;
-    }
+        private int _index = 0;
 
-    public void entry(string key, V value) {
-        serializer.writeString(ctx, key);
-        valueEndec.encode(ctx.pushField(key), serializer, value);
-    }
+        public void element(V element) {
+            valueEndec.encode(ctx.pushIndex(_index), serializer, element);
+            _index++;
+        }
 
-    public void end() {}
-}
+        public void entry(string key, V value) {
+            serializer.writeString(ctx, key);
+            valueEndec.encode(ctx.pushField(key), serializer, value);
+        }
 
-internal class BinaryWriterStructSerializer(BinaryWriterSerializer serializer) : StructSerializer {
-    public StructSerializer field<T>(string name, SerializationContext ctx, Endec<T> endec, T value, bool mayOmit) {
-        endec.encode(ctx.pushField(name), serializer, value);
-        return this;
+        public void end() {}
     }
 
-    public void end() {}
+    protected class Struct(BinaryWriterSerializer serializer) : StructSerializer {
+        public StructSerializer field<T>(string name, SerializationContext ctx, Endec<T> endec, T value, bool mayOmit) {
+            endec.encode(ctx.pushField(name), serializer, value);
+            return this;
+        }
+
+        public void end() {}
+    }
 }

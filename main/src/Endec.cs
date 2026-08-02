@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using io.wispforest.endec.impl;
 using io.wispforest.endec.util;
+using io.wispforest.endec.util.funny;
 
 namespace io.wispforest.endec;
 
@@ -140,17 +141,6 @@ public abstract class Endec<T> : Endec {
         return Endec.map(mapConstructor, keyToString, stringToKey, this);
     }
 
-    /// <summary>
-    /// Create a new endec which serializes an optional value
-    /// serialized using this endec
-    /// </summary>
-    public Endec<T?> optionalOf() {
-        return Endec.of(
-                (ctx, serializer, value) => serializer.writeOptional(ctx, this, value),
-                (ctx, deserializer) => deserializer.readOptional(ctx, this)
-        );
-    }
-
     // --- Constructors --
 
     /// <summary>
@@ -246,41 +236,31 @@ public abstract class Endec<T> : Endec {
     }
     
     public StructField<S, T> fieldOf<S>(String name, Func<S, T> getter) {
-        return new StructField<S, T>(name, this, getter);
-    }
-    
-    public StructField<S, T> optionalFieldOf<S>(String name, Func<S, T?> getter) {
-        return optionalFieldOf(name, getter, null);
-    }
-    
-    public StructField<S, T> optionalFieldOf<S>(String name, Func<S, T?> getter, T? defaultValue) {
-        return new StructField<S, T>(name, optionalOf(), getter, defaultValue);
-    }
-    
-    public StructField<S, T> optionalFieldOf<S>(String name, Func<S, T?> getter, Func<T?> defaultValue) {
-        if (defaultValue is null) {
-            throw new NullReferenceException("Supplier was found to be null which is not permitted for optionalFieldOf");
-        }
-    
-        return new StructField<S, T>(name, optionalOf(), getter, defaultValue);
+        return new StructFieldImpl<S, T>(name, this, getter);
     }
 }
 
 public interface Endec {
     
-     public static readonly StructEndec<object> VOID = Endec.unit<object>(null);
+     public static readonly StructEndec<object> VOID = unit<object>(null);
         
-    public static readonly Endec<bool> BOOLEAN = Endec.of<bool>((ctx, serializer, value) => serializer.writeBoolean(ctx, value), (ctx, deserializer) => deserializer.readBoolean(ctx)); 
-    public static readonly Endec<byte> BYTE = Endec.of<byte>((ctx, serializer, value) => serializer.writeByte(ctx, value), (ctx, deserializer) => deserializer.readByte(ctx));
-    public static readonly Endec<short> SHORT = Endec.of<short>((ctx, serializer, value) => serializer.writeShort(ctx, value), (ctx, deserializer) => deserializer.readShort(ctx));
-    public static readonly Endec<int> INT = Endec.of<int>((ctx, serializer, value) => serializer.writeInt(ctx, value), (ctx, deserializer) => deserializer.readInt(ctx));
-    public static readonly Endec<int> VAR_INT = Endec.of<int>((ctx, serializer, value) => serializer.writeVarInt(ctx, value), (ctx, deserializer) => deserializer.readVarInt(ctx));
-    public static readonly Endec<long> LONG = Endec.of<long>((ctx, serializer, value) => serializer.writeLong(ctx, value), (ctx, deserializer) => deserializer.readLong(ctx));
-    public static readonly Endec<long> VAR_LONG = Endec.of<long>((ctx, serializer, value) => serializer.writeVarLong(ctx, value), (ctx, deserializer) => deserializer.readVarLong(ctx));
-    public static readonly Endec<float> FLOAT = Endec.of<float>((ctx, serializer, value) => serializer.writeFloat(ctx, value), (ctx, deserializer) => deserializer.readFloat(ctx));
-    public static readonly Endec<double> DOUBLE = Endec.of<double>((ctx, serializer, value) => serializer.writeDouble(ctx, value), (ctx, deserializer) => deserializer.readDouble(ctx));
-    public static readonly Endec<string> STRING = Endec.of<string>((ctx, serializer, value) => serializer.writeString(ctx, value), (ctx, deserializer) => deserializer.readString(ctx));
-    public static readonly Endec<byte[]> BYTES = Endec.of<byte[]>((ctx, serializer, value) => serializer.writeBytes(ctx, value), (ctx, deserializer) => deserializer.readBytes(ctx));
+    public static readonly Endec<bool> BOOLEAN = of((ctx, serializer, value) => serializer.writeBoolean(ctx, value), (ctx, deserializer) => deserializer.readBoolean(ctx));
+    public static readonly Endec<byte> BYTE = of((ctx, serializer, value) => serializer.writeByte(ctx, value), (ctx, deserializer) => deserializer.readByte(ctx));
+    public static readonly Endec<sbyte> SBYTE = of((ctx, serializer, value) => serializer.writeSByte(ctx, value), (ctx, deserializer) => deserializer.readSByte(ctx));
+    public static readonly Endec<short> SHORT = of((ctx, serializer, value) => serializer.writeShort(ctx, value), (ctx, deserializer) => deserializer.readShort(ctx));
+    public static readonly Endec<ushort> USHORT = of((ctx, serializer, value) => serializer.writeUShort(ctx, value), (ctx, deserializer) => deserializer.readUShort(ctx));
+    public static readonly Endec<int> INT = of((ctx, serializer, value) => serializer.writeInt(ctx, value), (ctx, deserializer) => deserializer.readInt(ctx));
+    public static readonly Endec<uint> UINT = of((ctx, serializer, value) => serializer.writeUInt(ctx, value), (ctx, deserializer) => deserializer.readUInt(ctx));
+    public static readonly Endec<int> VAR_INT = of((ctx, serializer, value) => serializer.writeVarInt(ctx, value), (ctx, deserializer) => deserializer.readVarInt(ctx));
+    public static readonly Endec<uint> VAR_UINT = Endec.VAR_INT.xmap(i => (uint)i, i => (int)i); // TODO: MAYBE BEST TO HAVE DEDICATED HANDLING FOR THIS?
+    public static readonly Endec<long> LONG = of((ctx, serializer, value) => serializer.writeLong(ctx, value), (ctx, deserializer) => deserializer.readLong(ctx));
+    public static readonly Endec<ulong> ULONG = of((ctx, serializer, value) => serializer.writeULong(ctx, value), (ctx, deserializer) => deserializer.readULong(ctx));
+    public static readonly Endec<long> VAR_LONG = of((ctx, serializer, value) => serializer.writeVarLong(ctx, value), (ctx, deserializer) => deserializer.readVarLong(ctx));
+    public static readonly Endec<ulong> VAR_ULONG = Endec.VAR_LONG.xmap(i => (ulong)i, i => (long)i); // TODO: MAYBE BEST TO HAVE DEDICATED HANDLING FOR THIS?
+    public static readonly Endec<float> FLOAT = of((ctx, serializer, value) => serializer.writeFloat(ctx, value), (ctx, deserializer) => deserializer.readFloat(ctx));
+    public static readonly Endec<double> DOUBLE = of((ctx, serializer, value) => serializer.writeDouble(ctx, value), (ctx, deserializer) => deserializer.readDouble(ctx));
+    public static readonly Endec<string> STRING = of<string>((ctx, serializer, value) => serializer.writeString(ctx, value), (ctx, deserializer) => deserializer.readString(ctx));
+    public static readonly Endec<byte[]> BYTES = of<byte[]>((ctx, serializer, value) => serializer.writeBytes(ctx, value), (ctx, deserializer) => deserializer.readBytes(ctx));
     
     public static readonly Endec<int[]> INT_ARRAY = INT.listOf().xmap<int[]>((list) => list.ToArray(), (ints) => new List<int>(ints));
     public static readonly Endec<long[]> LONG_ARRAY = LONG.listOf().xmap((list) => list.ToArray(), (longs) => new List<long>(longs));
@@ -347,14 +327,16 @@ public interface Endec {
     /// is a list of key-value pairs
     /// </summary>
     public static Endec<IDictionary<K, V>> map<K, V>(Endec<K> keyEndec, Endec<V> valueEndec) {
-        return StructEndecBuilder.of(
-                keyEndec.fieldOf<KeyValuePair<K, V>>("k", s => s.Key),
-                valueEndec.fieldOf<KeyValuePair<K, V>>("v", s => s.Value),
+        return StructEndecBuilder.of<KeyValuePair<K, V>>(ctx =>
+            ctx.of<K, V>(
+                (keyEndec, "k", s => s.Key),
+                (valueEndec, "v", s => s.Value),
                 (k, v) => new KeyValuePair<K, V>(k, v)
+            )
         ).listOf().xmap<IDictionary<K, V>>(entries => {
             var map = new Dictionary<K, V>(entries.Count);
 
-            map.AddAll(entries);
+            map.addAll(entries);
             
             return map;
         }, kvMap => new List<KeyValuePair<K, V>>(kvMap));
@@ -670,4 +652,56 @@ public interface Endec {
         return new ArgumentOutOfRangeException($"Number {number} is out of range [{minValue}, {maxValue}].");
     }
     #endif
+}
+
+public static class EndecExtWorkAround {
+    extension<T>(Endec<T> endec) where T : struct {
+        /// <summary>
+        /// Create a new endec which serializes an optional value
+        /// serialized using this endec
+        /// </summary>
+        public Endec<T?> optionalOf(StructMarker _ = default) {
+            return Endec.of<T?>(
+                (ctx, serializer, value) => serializer.writeOptional(ctx, endec, value),
+                (ctx, deserializer) => deserializer.readOptional(ctx, endec)
+            );
+        }
+
+        public StructField<S, T?> nullableFieldOf<S>(string name, Func<S, T?> getter, StructMarker _ = default) {
+            return new NullStructStructField<S, T>(name, endec.optionalOf(), getter);
+        }
+
+        public StructField<S, T> defaultFieldOf<S>(string name, Func<S, T> getter, T defaultValue = default, StructMarker _ = default) {
+            return endec.defaultFieldOf(name, getter, () => defaultValue);
+        }
+
+        public StructField<S, T> defaultFieldOf<S>(string name, Func<S, T> getter, Func<T>? defaultValue, StructMarker _ = default) {
+            return new DefaultedStructStructField<S, T>(name, endec.optionalOf(), getter, defaultValue);
+        }
+    }
+
+    extension<T>(Endec<T> endec) where T : class {
+        /// <summary>
+        /// Create a new endec which serializes an optional value
+        /// serialized using this endec
+        /// </summary>
+        public Endec<T?> optionalOf(ClassMarker _ = default) {
+            return Endec.of<T?>(
+                (ctx, serializer, value) => serializer.writeOptional(ctx, endec, value),
+                (ctx, deserializer) => deserializer.readOptional(ctx, endec)
+            );
+        }
+
+        public StructField<S, T?> nullableFieldOf<S>(string name, Func<S, T?> getter, ClassMarker _ = default) {
+            return new NullClassStructField<S, T>(name, endec.optionalOf(), getter);
+        }
+
+        public StructField<S, T> defaultFieldOf<S>(string name, Func<S, T> getter, T defaultValue = default, ClassMarker _ = default) {
+            return endec.defaultFieldOf(name, getter, () => defaultValue);
+        }
+
+        public StructField<S, T> defaultFieldOf<S>(string name, Func<S, T> getter, Func<T>? defaultValue = null, ClassMarker _ = default) {
+            return new DefaultedClassStructField<S, T>(name, endec.optionalOf(), getter, defaultValue);
+        }
+    }
 }

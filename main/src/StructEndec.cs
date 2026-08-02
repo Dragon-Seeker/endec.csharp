@@ -22,22 +22,18 @@ public abstract class StructEndec<T> : Endec<T>, StructEndec {
     public abstract T decodeStruct<E>(SerializationContext ctx, Deserializer<E> deserializer, StructDeserializer instance) where E : class;
     
     public override void encode<E>(SerializationContext ctx, Serializer<E> serializer, T value) where E : class {
-        using (var instance = serializer.structed()) {
-            encodeStruct(ctx, serializer, instance, value);
-        }
-    }
-    
-    public override T decode<E>(SerializationContext ctx, Deserializer<E> deserializer) where E : class {
-        return decodeStruct(ctx, deserializer, deserializer.structed());
+        using var instance = serializer.structed(ctx);
+        encodeStruct(ctx, serializer, instance, value);
     }
 
-    public StructField<S, T> flatFieldOf<S>(Func<S, T> getter) {
-        return new FlatStructField<S, T>(this, getter);
+    public override T decode<E>(SerializationContext ctx, Deserializer<E> deserializer) where E : class {
+        using var instance =  deserializer.structed(ctx);
+        return decodeStruct(ctx, deserializer, instance);
     }
+
+    public StructField<S, T> flatFieldOf<S>(Func<S, T> getter) => new FlatStructField<S, T>(this, getter);
     
-    public StructField<M, T> flatInheritedFieldOf<M>() where M : T {
-        return new FlatStructField<M, T>(this, m => m);
-    }
+    public StructField<M, T> flatInheritedFieldOf<M>() where M : T => new FlatStructField<M, T>(this, m => m);
     
     public StructEndec<R> xmap<R>(Func<T, R> to, Func<R, T> from) {
         return StructEndec.of(
@@ -64,7 +60,7 @@ public abstract class StructEndec<T> : Endec<T>, StructEndec {
     }
     
     public StructEndec<T> validate(Action<T> validator) {
-        return this.xmap(t => {
+        return xmap(t => {
             validator(t);
             return t;
         }, t => {

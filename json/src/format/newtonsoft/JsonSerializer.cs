@@ -7,115 +7,77 @@ namespace io.wispforest.endec.format.newtonsoft;
 
 public class JsonSerializer : RecursiveSerializer<JToken>, SelfDescribedSerializer<JToken> {
 
-    internal JToken? prefix;
+    protected JToken? prefix;
 
     protected JsonSerializer(JToken? prefix) : base(JValue.CreateNull()) {
         this.prefix = prefix;
     }
 
-    public static JsonSerializer of() {
-        return new JsonSerializer(null);
-    }
+    public static JsonSerializer of() => new (null);
     
-    public SerializationContext setupContext(SerializationContext ctx) {
-        return ctx.withAttributes(SerializationAttributes.HUMAN_READABLE);
-    }
+    public SerializationContext setupContext(SerializationContext ctx) => ctx.withAttributes(SerializationAttributes.HUMAN_READABLE);
     
     //--
 
-    public override void writeByte(SerializationContext ctx, byte value) {
-        consume(new JValue(value));
-    }
+    public override void writeByte(SerializationContext ctx, byte value) => consume(new JValue(value));
 
-    public override void writeShort(SerializationContext ctx, short value) {
-        consume(new JValue(value));
-    }
+    public override void writeShort(SerializationContext ctx, short value) => consume(new JValue(value));
 
-    public override void writeInt(SerializationContext ctx, int value) {
-        consume(new JValue(value));
-    }
+    public override void writeInt(SerializationContext ctx, int value) => consume(new JValue(value));
 
-    public override void writeLong(SerializationContext ctx, long value) {
-        consume(new JValue(value));
-    }
+    public override void writeLong(SerializationContext ctx, long value) => consume(new JValue(value));
 
-    public override void writeFloat(SerializationContext ctx, float value) {
-        consume(new JValue(value));
-    }
+    public override void writeFloat(SerializationContext ctx, float value) => consume(new JValue(value));
 
-    public override void writeDouble(SerializationContext ctx, double value) {
-        consume(new JValue(value));
-    }
+    public override void writeDouble(SerializationContext ctx, double value) => consume(new JValue(value));
 
-    public override void writeVarInt(SerializationContext ctx, int value) {
-        consume(new JValue(value));
-    }
+    public override void writeVarInt(SerializationContext ctx, int value) => consume(new JValue(value));
 
-    public override void writeVarLong(SerializationContext ctx, long value) {
-        consume(new JValue(value));
-    }
+    public override void writeVarLong(SerializationContext ctx, long value) => consume(new JValue(value));
 
-    public override void writeBoolean(SerializationContext ctx, bool value) {
-        consume(new JValue(value));
-    }
+    public override void writeBoolean(SerializationContext ctx, bool value) => consume(new JValue(value));
 
-    public override void writeString(SerializationContext ctx, string value) {
-        consume(new JValue(value));
-    }
+    public override void writeString(SerializationContext ctx, string value) => consume(new JValue(value));
 
     public override void writeBytes(SerializationContext ctx, byte[] bytes) {
         var result = new JArray();
         for (int i = 0; i < bytes.Length; i++) {
             result.Add(new JValue(bytes[i]));
         }
-
         consume(result);
     }
 
-    public override void writeOptional<V>(SerializationContext ctx, Endec<V> endec, V? optional) where V : default {
-        if (optional is null) {
-            consume(JValue.CreateNull());
-        } else {
-            endec.encode(ctx, this, optional!);
-        }
+    public override void writeOptional<V>(SerializationContext ctx, Endec<V> endec, bool isPresent, Func<V> getter) {
+        if (isPresent) consume(JValue.CreateNull());
+        else endec.encode(ctx, this, getter());
     }
 
-    public override SequenceSerializer<E> sequence<E>(SerializationContext ctx, Endec<E> elementEndec, int size) {
-        return new JsonSequenceSerializer<E>(this, ctx, elementEndec, size);
-    }
+    public override SequenceSerializer<E> sequence<E>(SerializationContext ctx, Endec<E> elementEndec, int size) => new Sequence<E>(this, ctx, elementEndec);
 
-    public override MapSerializer<V> map<V>(SerializationContext ctx, Endec<V> valueEndec, int size) {
-        return new JsonMapSerializer<V>(this, ctx, valueEndec);
-    }
+    public override MapSerializer<V> map<V>(SerializationContext ctx, Endec<V> valueEndec, int size) => new Map<V>(this, ctx, valueEndec);
 
-    public override StructSerializer structed() {
-        return new JsonStructSerializer(this);
-    }
+    public override StructSerializer structed(SerializationContext ctx) => new Struct(this);
     
     //--
-    private class JsonStructSerializer : StructSerializer {
-    
-        private readonly JsonSerializer _serializer;
-        private readonly JObject _result;
-        
-        public JsonStructSerializer(JsonSerializer serializer) {
-            _serializer = serializer;
-            
-            if (serializer.prefix is not null) {
-                if (serializer.prefix is JObject prefixObject) {
-                    _result = prefixObject;
+
+    protected class Struct(JsonSerializer serializer) : StructSerializer {
+        private readonly JObject _result = getOrCreateMap(serializer);
+
+        private static JObject getOrCreateMap(JsonSerializer serializer) {
+            switch (serializer.prefix) {
+                case null:
+                    return new JObject();
+                case JObject prefixObject:
                     serializer.prefix = null;
-                } else {
-                    throw new Exception($"Incompatible prefix of type used {this._serializer.GetType().Name} for JSON map/struct");
-                }
-            } else {
-                _result = new JObject();
+                    return prefixObject;
+                default:
+                    throw new Exception($"Incompatible prefix of type {serializer.prefix.GetType().Name} used for JSON map/struct");
             }
         }
         
         public StructSerializer field<F>(string name, SerializationContext ctx, Endec<F> endec, F value, bool mayOmit) {
-            _serializer.frame(encoded => {
-                endec.encode(ctx.pushField(name), _serializer, value);
+            serializer.frame(encoded => {
+                endec.encode(ctx.pushField(name), serializer, value);
 
                 var element = encoded.require("struct field");
                 
@@ -127,82 +89,57 @@ public class JsonSerializer : RecursiveSerializer<JToken>, SelfDescribedSerializ
             return this;
         }
         
-        public void end() {
-            _serializer.consume(_result);
-        }
+        public void end() => serializer.consume(_result);
     }
 
-    private class JsonMapSerializer<V> : MapSerializer<V> {
+    protected class Map<V>(JsonSerializer serializer, SerializationContext ctx, Endec<V> valueEndec) : MapSerializer<V> {
+        protected readonly JObject _result;
 
-        private readonly JsonSerializer _serializer;
-        private readonly SerializationContext _ctx;
-        private readonly Endec<V> _valueEndec;
-        private readonly JObject _result;
-
-        public JsonMapSerializer(JsonSerializer serializer, SerializationContext ctx, Endec<V> valueEndec) {
-            _serializer = serializer;
-            _ctx = ctx;
-            _valueEndec = valueEndec;
-            
-            if (serializer.prefix is not null) {
-                if (serializer.prefix is JObject prefixObject) {
-                    _result = prefixObject;
+        private static JObject getOrCreateMap(JsonSerializer serializer) {
+            switch (serializer.prefix) {
+                case null:
+                    return new JObject();
+                case JObject prefixObject:
                     serializer.prefix = null;
-                } else {
-                    throw new Exception($"Incompatible prefix of type used {_serializer.GetType().Name} for JSON map/struct");
-                }
-            } else {
-                _result = new JObject();
+                    return prefixObject;
+                default:
+                    throw new Exception($"Incompatible prefix of type {serializer.prefix.GetType().Name} used for JSON map/struct");
             }
         }
-
         
         public void entry(string key, V value) {
-            _serializer.frame(encoded => {
-                _valueEndec.encode(_ctx.pushField(key), _serializer, value);
+            serializer.frame(encoded => {
+                valueEndec.encode(ctx.pushField(key), serializer, value);
                 _result.Add(key, encoded.require("map value"));
             });
         }
         
-        public void end() {
-            _serializer.consume(_result);
-        }
+        public void end() => serializer.consume(_result);
     }
 
-    private class JsonSequenceSerializer<V> : SequenceSerializer<V> {
+    protected class Sequence<V>(JsonSerializer serializer, SerializationContext ctx, Endec<V> valueEndec) : SequenceSerializer<V> {
+        protected readonly JArray _result = getOrCreateArray(serializer);
 
-        private readonly JsonSerializer _serializer;
-        private readonly SerializationContext _ctx;
-        private readonly Endec<V> _valueEndec;
-        private readonly JArray _result;
-
-        public JsonSequenceSerializer(JsonSerializer serializer, SerializationContext ctx, Endec<V> valueEndec, int size) {
-            _serializer = serializer;
-            _ctx = ctx;
-            _valueEndec = valueEndec;
-
-            if (serializer.prefix != null) {
-                if (serializer.prefix is JArray prefixArray) {
-                    _result = prefixArray;
+        private static JArray getOrCreateArray(JsonSerializer serializer) {
+            switch (serializer.prefix) {
+                case null:
+                    return [];
+                case JArray prefixArray:
                     serializer.prefix = null;
-                } else {
+                    return prefixArray;
+                default:
                     throw new Exception($"Incompatible prefix of type {serializer.prefix.GetType().Name} used for JSON sequence");
-                }
-            } else {
-                _result = new JArray();
             }
         }
 
         public void element(V element) {
-            _serializer.frame(encoded => {
-                _valueEndec.encode(_ctx.pushIndex(_result.Count), _serializer, element);
+            serializer.frame(encoded => {
+                valueEndec.encode(ctx.pushIndex(_result.Count), serializer, element);
                 _result.Add(encoded.require("sequence element"));
             });
         }
 
-        public void end() {
-            _serializer.consume(_result);
-        }
+        public void end() => serializer.consume(_result);
     }
 }
 

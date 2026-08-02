@@ -7,7 +7,9 @@
     <Product>Endec</Product>
     <Version>1.1.0</Version>
 
+    <LangVersion>14</LangVersion>
     <Nullable>enable</Nullable>
+
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
     <RestoreAdditionalProjectSources>
@@ -34,6 +36,13 @@
 
   <ItemGroup>
 
+    <PackageReference Include="PolySharp" Version="1.16.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+
+    <PackageReference Include="System.Text.Json" Version="10.0.9" />
+    
     <None Include="docs\README.md" Pack="true" PackagePath="\"/>
     <None Include="..\LICENSE" Pack="true" PackagePath=""/>
     

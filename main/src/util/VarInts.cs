@@ -2,6 +2,7 @@ using System;
 
 namespace io.wispforest.endec.util;
 
+// TODO: CHANGE/ADD DIFFERENT VAR INT HANDLING FOR ZIG ZAG TO HAVE BETTER SAVINGS FOR SMALL + or - NUMBERS AS CURRENTLY THIS ONLY WORKS WELL FOR + NUMBERS
 public class VarInts {
     public const int SEGMENT_BITS = 127;
     public const int CONTINUE_BIT = 128;

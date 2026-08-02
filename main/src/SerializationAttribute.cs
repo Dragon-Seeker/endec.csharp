@@ -1,6 +1,6 @@
 ﻿namespace io.wispforest.endec;
 
-public class SerializationAttributes {
+public static class SerializationAttributes {
 
     /**
      * This format is intended to be human-readable (and potentially -editable)
@@ -11,40 +11,26 @@ public class SerializationAttributes {
     public static readonly SerializationAttributeMarker HUMAN_READABLE = SerializationAttribute.marker("human_readable");
 }
 
-public abstract class SerializationAttribute  {
-    public readonly string name;
+public abstract class SerializationAttribute(string name) {
+    public readonly string name = name;
 
-    protected SerializationAttribute(string name) {
-        this.name = name;
-    }
+    public static SerializationAttributeMarker marker(string name) => new (name);
 
-    public static SerializationAttributeMarker marker(string name) {
-        return new SerializationAttributeMarker(name);
-    }
-
-    public static SerializationAttributeWithValue<T> withValue<T>(string name) {
-        return new SerializationAttributeWithValue<T>(name);
-    }
+    public static SerializationAttributeWithValue<T> withValue<T>(string name) => new (name);
 }
 
 public sealed class SerializationAttributeMarker : SerializationAttribute, SerializationAttributeInstance {
     internal SerializationAttributeMarker(string name) : base(name) { }
 
-    public SerializationAttribute attribute() {
-        return this;
-    }
+    public SerializationAttribute attribute() => this;
     
-    public object value() {
-        return null;
-    }
+    public object value() => default;
 }
 
 public sealed class SerializationAttributeWithValue<T> : SerializationAttribute {
     internal SerializationAttributeWithValue(string name) : base(name) { }
 
-    public SerializationAttributeInstance instance(T value) {
-        return new InstanceImpl(this, value);
-    }
+    public SerializationAttributeInstance instance(T value) => new InstanceImpl(this, value);
 }
 
 public interface SerializationAttributeInstance {
@@ -52,21 +38,9 @@ public interface SerializationAttributeInstance {
     public object value();
 }
 
-internal class InstanceImpl : SerializationAttributeInstance {
-
-    private readonly SerializationAttribute attribute;
-    private readonly object value;
-
-    internal InstanceImpl(SerializationAttribute attribute, object value) {
-        this.attribute = attribute;
-        this.value = value;
-    }
+internal class InstanceImpl(SerializationAttribute attribute, object value) : SerializationAttributeInstance {
     
-    SerializationAttribute SerializationAttributeInstance.attribute() {
-        return attribute;
-    }
+    SerializationAttribute SerializationAttributeInstance.attribute() => attribute;
 
-    object SerializationAttributeInstance.value() {
-        return value;
-    }
+    object SerializationAttributeInstance.value() => value;
 }
