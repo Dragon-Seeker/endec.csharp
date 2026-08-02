@@ -62,7 +62,7 @@ public class BinaryWriterSerializer : Serializer<BinaryWriter> {
         input.Write(bytes);
     }
 
-    public void writeOptional<V>(SerializationContext ctx, Endec<V> endec, bool isPresent, Func<V> getter) {
+    public void writeOptionalDelegate<V>(SerializationContext ctx, Endec<V> endec, bool isPresent, Func<V> getter) {
         writeBoolean(ctx, isPresent);
         if (isPresent) endec.encode(ctx, this, getter());
     }

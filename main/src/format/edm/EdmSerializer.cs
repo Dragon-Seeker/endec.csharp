@@ -50,7 +50,7 @@ public class EdmSerializer : RecursiveSerializer<EdmElement>, SelfDescribedSeria
 
     public override void writeBytes(SerializationContext ctx, byte[] bytes) => consume(EdmElements.bytes(bytes));
 
-    public override void writeOptional<V>(SerializationContext ctx, Endec<V> endec, bool isPresent, Func<V> getter) {
+    public override void writeOptionalDelegate<V>(SerializationContext ctx, Endec<V> endec, bool isPresent, Func<V> getter) {
         var result = new EdmElement[1];
         frame(encoded => {
             if (isPresent) endec.encode(ctx, this, getter());

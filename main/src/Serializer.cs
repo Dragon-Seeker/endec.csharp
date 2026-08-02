@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using io.wispforest.endec.util;
 using io.wispforest.endec.util.funny;
 
@@ -31,14 +32,14 @@ public interface Serializer<out T> where T : class {
     public void writeBytes(SerializationContext ctx, byte[] bytes);
 
     public void writeOptional<V>(SerializationContext ctx, Endec<V> endec, V? optional, StructMarker _ = default) where V : struct {
-        writeOptional(ctx, endec, optional.HasValue, optional.GetValueOrDefault);
+        writeOptionalDelegate(ctx, endec, optional.HasValue, optional.GetValueOrDefault);
     }
 
     public void writeOptional<V>(SerializationContext ctx, Endec<V> endec, V? optional, ClassMarker _ = default) where V : class {
-        writeOptional(ctx, endec, optional != null, () => optional!);
+        writeOptionalDelegate(ctx, endec, optional != null, () => optional!);
     }
 
-    public void writeOptional<V>(SerializationContext ctx, Endec<V> endec, bool isPresent, Func<V> getter);
+    public void writeOptionalDelegate<V>(SerializationContext ctx, Endec<V> endec, bool isPresent, Func<V> getter);
     
     public SequenceSerializer<E> sequence<E>(SerializationContext ctx, Endec<E> elementEndec, int size); 
     public MapSerializer<V> map<V>(SerializationContext ctx, Endec<V> valueEndec, int size);

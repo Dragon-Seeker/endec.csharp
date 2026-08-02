@@ -47,7 +47,7 @@ public class JsonSerializer : RecursiveSerializer<JToken>, SelfDescribedSerializ
         consume(result);
     }
 
-    public override void writeOptional<V>(SerializationContext ctx, Endec<V> endec, bool isPresent, Func<V> getter) {
+    public override void writeOptionalDelegate<V>(SerializationContext ctx, Endec<V> endec, bool isPresent, Func<V> getter) {
         if (isPresent) consume(JValue.CreateNull());
         else endec.encode(ctx, this, getter());
     }
