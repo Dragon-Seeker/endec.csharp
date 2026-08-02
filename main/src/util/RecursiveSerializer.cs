@@ -57,7 +57,7 @@ public abstract class RecursiveSerializer<T> : Serializer<T> where T : class {
     public abstract void writeBoolean(SerializationContext ctx, bool value);
     public abstract void writeString(SerializationContext ctx, string value);
     public abstract void writeBytes(SerializationContext ctx, byte[] bytes);
-    public abstract void writeOptionalDelegate<V>(SerializationContext ctx, Endec<V> endec, bool isPresent, Func<V> getter);
+    public abstract void writeOptional<V>(SerializationContext ctx, Endec<V> endec, bool isPresent, Func<V> getter);
     
     public abstract SequenceSerializer<E> sequence<E>(SerializationContext ctx, Endec<E> elementEndec, int size);
     public abstract MapSerializer<V> map<V>(SerializationContext ctx, Endec<V> valueEndec, int size);

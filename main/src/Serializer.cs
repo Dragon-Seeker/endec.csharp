@@ -32,14 +32,14 @@ public interface Serializer<out T> where T : class {
     public void writeBytes(SerializationContext ctx, byte[] bytes);
 
     public void writeOptional<V>(SerializationContext ctx, Endec<V> endec, V? optional, StructMarker _ = default) where V : struct {
-        writeOptionalDelegate(ctx, endec, optional.HasValue, optional.GetValueOrDefault);
+        writeOptional(ctx, endec, optional.HasValue, () => optional.GetValueOrDefault());
     }
 
     public void writeOptional<V>(SerializationContext ctx, Endec<V> endec, V? optional, ClassMarker _ = default) where V : class {
-        writeOptionalDelegate(ctx, endec, optional != null, () => optional!);
+        writeOptional(ctx, endec, optional != null, () => optional!);
     }
 
-    public void writeOptionalDelegate<V>(SerializationContext ctx, Endec<V> endec, bool isPresent, Func<V> getter);
+    public void writeOptional<V>(SerializationContext ctx, Endec<V> endec, bool isPresent, Func<V> getter);
     
     public SequenceSerializer<E> sequence<E>(SerializationContext ctx, Endec<E> elementEndec, int size); 
     public MapSerializer<V> map<V>(SerializationContext ctx, Endec<V> valueEndec, int size);
