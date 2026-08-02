@@ -5,7 +5,7 @@
     
     <AssemblyName>Endec.Json</AssemblyName>
     <Product>Endec.Json</Product>
-    <Version>1.0.1</Version>
+    <Version>1.1.0</Version>
 
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
