@@ -79,13 +79,13 @@ public class EdmElement<T> : EdmElement {
         return value is V v ? v : throw new InvalidCastException($"Unable to cast [{value?.GetType()}] to [{typeof(V)}");
     }
     
-    public override object unwrap() {
+    public override object? unwrap() {
         return value switch {
-            List<object> list => list.Select(o => (o as EdmElement<object>).unwrap()).ToList(),
-            Dictionary<string, object> map => new Dictionary<string, object>().apply(newMap => {
-                foreach (var entry in map) newMap[entry.Key] = (entry.Value as EdmElement<object>).unwrap();
-            }),
-            _ => Nullable.GetUnderlyingType(value.GetType()) != null ? (value is not null ? (value! as EdmElement<object>).unwrap() : null) : value
+            null => null,
+            EdmElement inner => inner.unwrap(),                                    // OPTIONAL
+            IList<EdmElement> list => list.Select(e => e.unwrap()).ToList(),
+            IDictionary<string, EdmElement> map => map.ToDictionary(e => e.Key, e => e.Value.unwrap()),
+            _ => value
         };
     }
 
@@ -100,16 +100,40 @@ public class EdmElement<T> : EdmElement {
     }
 
     public override bool Equals(object? obj) {
-        if (this == obj) return true;
-        if (obj is not EdmElement that || type != that.type) return false;
-        var thatValue = that.unwrap();
-        return (value is null && thatValue is null) || (value?.Equals(thatValue) ?? false);
+        if (ReferenceEquals(this, obj)) return true;
+        if (obj is not EdmElement other || type != other.type) return false;
+        return deepEquals(unwrap(), other.unwrap());   // element-wise for IList / IDictionary, Equals otherwise
+    }
+
+    private static bool deepEquals(object? a, object? b) {
+        if (ReferenceEquals(a, b)) return true;
+        if (a is null || b is null) return false;
+
+        switch (a) {
+            case byte[] bytesA when b is byte[] bytesB:
+                return bytesA.AsSpan().SequenceEqual(bytesB);
+
+            case IList<object?> listA when b is IList<object?> listB:
+                if (listA.Count != listB.Count) return false;
+                for (var i = 0; i < listA.Count; i++) {
+                    if (!deepEquals(listA[i], listB[i])) return false;
+                }
+                return true;
+
+            case IDictionary<string, object?> mapA when b is IDictionary<string, object?> mapB:
+                if (mapA.Count != mapB.Count) return false;
+                foreach (var entry in mapA) {
+                    if (!mapB.TryGetValue(entry.Key, out var other) || !deepEquals(entry.Value, other)) return false;
+                }
+                return true;
+
+            default:
+                return a.Equals(b);
+        }
     }
 
     public override int GetHashCode() {
-        int result = value.GetHashCode();
-        result = 31 * result + type.GetHashCode();
-        return result;
+        return 31 * (value?.GetHashCode() ?? 0) + type.GetHashCode();
     }
     
     // TODO: IMPL

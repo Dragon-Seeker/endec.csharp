@@ -161,8 +161,7 @@ public class EdmDeserializer : RecursiveDeserializer<EdmElement>, SelfDescribedD
 
     protected class Struct(EdmDeserializer deserializer, IDictionary<string, EdmElement> map) : StructDeserializer {
         public F field<F>(string name, SerializationContext ctx, Endec<F> endec, Func<F>? defaultValueFactory) {
-            var element = map[name];
-            if (element == null) {
+            if (!map.TryGetValue(name, out var element)) {
                 return defaultValueFactory == null ? throw new Exception("Field '" + name + "' was missing from serialized data, but no default value was provided") : defaultValueFactory();
             }
 

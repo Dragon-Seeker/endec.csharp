@@ -185,7 +185,7 @@ public class EdmBinaryDeserializer(Stream stream, long size) : ParsingDeserializ
         private bool _reachedEndOfStruct = false;
 
         public bool MoveNext() {
-            if (_index + 1 >= length) return false;
+            if (_index >= length) return false;
             _index++;
             return true;
         }

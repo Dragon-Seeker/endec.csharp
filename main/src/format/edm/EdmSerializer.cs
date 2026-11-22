@@ -104,7 +104,7 @@ public class EdmSerializer : RecursiveSerializer<EdmElement>, SelfDescribedSeria
 
                 var element = encoded.require("struct field");
 
-                if (mayOmit && element.Equals(EdmElements.EMPTY)) return;
+                if (mayOmit && ReferenceEquals(element, EdmElements.EMPTY)) return;
 
                 result[name] = element;
             });
