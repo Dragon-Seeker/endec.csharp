@@ -70,9 +70,17 @@ public class BinaryReaderDeserializer : Deserializer<BinaryReader> {
 
         public int estimatedSize() => size;
 
-        public bool MoveNext() => ++_index < size;
+        public bool MoveNext() {
+            if (_index >= size) {
+                Current = default;
+                return false;
+            }
+            Current = valueEndec.decode(ctx.pushIndex(_index), deserializer);
+            _index++;
+            return true;
+        }
 
-        public V Current => valueEndec.decode(ctx.pushIndex(_index), deserializer);
+        public V Current { get; private set; } = default;
 
         public void Dispose() { /* NO-OP*/ }
 
@@ -88,16 +96,25 @@ public class BinaryReaderDeserializer : Deserializer<BinaryReader> {
 
         public int estimatedSize() => size;
 
-        public bool MoveNext() => _index < size;
+        public bool MoveNext() {
+            if (_index >= size) {
+                Current = default;
+                return false;
+            }
 
-        public KeyValuePair<string, V> next() {
+            Current = readPair();
             _index++;
+
+            return true;
+        }
+
+        private KeyValuePair<string, V> readPair() {
             var key = deserializer.readString(ctx);
 
             return new KeyValuePair<string, V>(key, valueEndec.decode(ctx.pushField(key), deserializer));
         }
 
-        public KeyValuePair<string, V> Current => next();
+        public KeyValuePair<string, V> Current { get; private set; }
 
         public void Dispose() { /* NO-OP */ }
 

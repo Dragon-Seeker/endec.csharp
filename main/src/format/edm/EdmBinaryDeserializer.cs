@@ -129,9 +129,9 @@ public class EdmBinaryDeserializer(Stream stream, long size) : ParsingDeserializ
         public int estimatedSize() => length;
 
         public bool MoveNext() {
-            if (_index + 1 >= length) return false;
-            _index++;
+            if (_index >= length) return false;
             Current = valueEndec.decode(ctx.pushIndex(_index), deserializer);
+            _index++;
             return true;
         }
 
@@ -153,12 +153,15 @@ public class EdmBinaryDeserializer(Stream stream, long size) : ParsingDeserializ
         public int estimatedSize() => length;
 
         public bool MoveNext() {
-            if (_index + 1 >= length) return false;
-            _index++;
+            if (_index >= length) {
+                Current = default;
+                return false;
+            }
             Current = new KeyValuePair<string, V>(
                 deserializer.readString(ctx),
                 valueEndec.decode(ctx.pushIndex(_index), deserializer)
             );
+            _index++;
             return true;
         }
 

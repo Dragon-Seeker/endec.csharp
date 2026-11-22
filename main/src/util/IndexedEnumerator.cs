@@ -16,12 +16,14 @@ public class WrappedIEnumerator<T>(IEnumerator<T> enumerator) : IndexedEnumerato
     public bool MoveNext() {
         var bl = enumerator.MoveNext();
 
-        if (bl) index++;
+        if (bl) _nextIndex++;
 
         return bl;
     }
-    
-    public int index { get; private set; }
+
+    private int _nextIndex = 0;
+
+    public int index => _nextIndex - 1;
     
     public T Current => enumerator.Current;
 
